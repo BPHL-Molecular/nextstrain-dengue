@@ -1,0 +1,13 @@
+# Spellings used in the BPHL epidemiology export, mapped to the spellings in
+# phylogenetic/defaults/color_orderings.tsv. Anything not listed here has to
+# match that file exactly or bphl-export-to-metadata.py reports it and leaves
+# travel_country blank.
+#
+# from	to
+Trinidad And Tobago	Trinidad and Tobago
+Antigua And Barbuda	Antigua and Barbuda
+Saint Barts	Saint Barthélemy
+Surinam	Suriname
+Virgin islands	Virgin Islands
+Turks Caicos	Turks and Caicos Islands
+California	USA

@@ -60,6 +60,46 @@ sequences but absent from the metadata is excluded with a warning, so
 concatenating all of `assemblies_qc_pass/` and then letting this script decide
 what enters the trees is the intended workflow.
 
+#### From a multi-year epidemiology export
+
+When the sequencing results and the epidemiology come from separate exports
+rather than a single `Daytona_dengue` run, use the other converter:
+
+```sh
+python3 local/scripts/bphl-export-to-metadata.py \
+    --sequences data/sequences.txt \
+    --metadata data/metadata.txt \
+    --mosquito data/mosquito.txt \
+    --synonyms local/defaults/country_synonyms.tsv \
+    --countries phylogenetic/defaults/color_orderings.tsv \
+    --output local/input/metadata.tsv \
+    --report local/input/conversion_report.txt
+```
+
+It expects `sampleID`, `serotype` and `nextclade_clade` in the sequencing file;
+`sampleID`, `Imported Status`, `Origin`, `Date of Collection` and
+`Collection County` in the case file; and `sampleID`, `Species`, `Origin` and
+`Date of Collection` in the mosquito file. Membership of the mosquito file is
+what sets `host`, so a vector sample keeps its normal laboratory identifier
+rather than needing a recognizable prefix.
+
+`Imported Status` becomes `case_origin`, and `Origin` becomes `travel_country`
+after passing through `defaults/country_synonyms.tsv`, which reconciles the
+export's spellings with `phylogenetic/defaults/color_orderings.tsv`. An `Origin`
+that names several places, a region rather than a country, or nothing at all
+yields `case_origin: unknown` and a blank `travel_country`, with the original
+string kept in `notes`. For a locally acquired case `Origin` is the county of
+exposure; it is recorded in `notes` when it differs from the collection county.
+
+Identifiers are written out exactly as the sequencing file has them, including
+the `t_` prefixes and `_NC_<date>` suffixes that re-sequenced samples carry,
+because they have to match the FASTA headers. Those decorations are stripped
+only to find the matching epidemiology row.
+
+Read `conversion_report.txt`. It lists samples dropped for having no
+epidemiology row and therefore no collection date, samples sequenced more than
+once, and travel countries missing from the colour ordering file.
+
 To write the table by hand instead, copy `defaults/metadata_template.tsv` and
 fill one row per sample.
 
