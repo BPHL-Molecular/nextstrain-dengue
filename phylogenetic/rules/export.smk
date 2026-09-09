@@ -247,7 +247,11 @@ rule lat_longs:
     drops those geo resolutions entirely. This repeats the country and region
     rows under the exposure names. Every original row is kept, so it works
     whether --lat-longs supplements the built-in table or replaces it.
+
+    defaults/lat_longs.tsv adds the countries augur's table does not carry.
     """
+    input:
+        extra = "defaults/lat_longs.tsv",
     output:
         lat_longs = "results/defaults/lat_longs.tsv",
     shell:
@@ -258,7 +262,7 @@ rule lat_longs:
             {{ print }}
             $1 == "country" {{ print "country_exposure", $2, $3, $4 }}
             $1 == "region"  {{ print "region_exposure",  $2, $3, $4 }}
-        ' "$augur_lat_longs" > {output.lat_longs}
+        ' "$augur_lat_longs" {input.extra} > {output.lat_longs}
         """
 
 
