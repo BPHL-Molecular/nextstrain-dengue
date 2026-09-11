@@ -177,6 +177,11 @@ rule prepare_auspice_config:
                 "type": "categorical"
               },
               {
+                "key": "vadr_flag",
+                "title": "VADR flag",
+                "type": "categorical"
+              },
+              {
                 "key": "country_exposure",
                 "title": "Country of exposure",
                 "type": "categorical"
@@ -196,6 +201,7 @@ rule prepare_auspice_config:
             "filters": [
               "data_source",
               "case_origin",
+              "vadr_flag",
               "location",
               "division",
               "country",

@@ -274,3 +274,5 @@ data_source	Florida BPHL	#e4572e
 case_origin	local	#b22222
 case_origin	travel-associated	#2e86ab
 case_origin	undetermined	#bbbbbb
+vadr_flag	PASS	#1b7837
+vadr_flag	REVIEW	#e08214

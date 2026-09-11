@@ -51,7 +51,8 @@ validate:
   region_map: "../phylogenetic/defaults/color_orderings.tsv"
   required_columns: ["sample_id", "serotype", "collection_date", "nextclade_clade"]
   optional_columns: ["strain", "country", "region", "division", "location", "host",
-                     "case_origin", "travel_country", "authors", "institution", "notes"]
+                     "case_origin", "travel_country", "authors", "institution", "notes",
+                     "vadr_flag"]
   allowed_serotypes: ["denv1", "denv2", "denv3", "denv4"]
   # Below this many unambiguous bases a sample cannot pass `augur filter
   # --min-length 5000` on its own merit and only reaches the genome tree because
@@ -101,3 +102,4 @@ metadata_columns:
   - case_origin
   - travel_country
   - notes
+  - vadr_flag

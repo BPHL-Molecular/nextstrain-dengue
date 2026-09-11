@@ -2,9 +2,10 @@
 """
 Keep one sequence per specimen when a sample was sequenced more than once.
 
-Replicates share an identifier once the t_ prefix, the _NC_/_RJ_ run suffix and
-a trailing K are removed. The copy with the most unambiguous bases is kept and
-the others are dropped from both the metadata and the FASTA.
+Replicates share an identifier once the t_ prefix, the run suffix and a trailing
+K or k are removed. A VADR PASS copy is kept over any other; among copies with
+the same flag, the one with the most unambiguous bases. The others are dropped
+from both the metadata and the FASTA.
 """
 
 import argparse
@@ -15,6 +16,7 @@ import sys
 from Bio import SeqIO
 
 UNAMBIGUOUS = set("ACGTU")
+RUN_SUFFIX = re.compile(r"(?:_(?:NC|RJ)_\d+|[-_](?:repeat\d*|NextSeq|test))$")
 
 
 def parse_args():
@@ -31,7 +33,7 @@ def parse_args():
 def undecorated(sample_id):
     # Keep in step with join_keys in bphl-export-to-metadata.py.
     stripped = sample_id[2:] if sample_id.startswith("t_") else sample_id
-    return re.sub(r"_(NC|RJ)_\d+$", "", stripped)
+    return RUN_SUFFIX.sub("", stripped)
 
 
 def main():
@@ -45,11 +47,12 @@ def main():
     sequences = {record.id: str(record.seq) for record in SeqIO.parse(args.sequences, "fasta")}
 
     keys = {row[args.id_column]: undecorated(row[args.id_column]) for row in rows}
+    flag = {row[args.id_column]: row.get("vadr_flag", "").upper() for row in rows}
     present = set(keys.values())
     # A trailing K only marks a replicate when the unsuffixed identifier exists too,
     # so an identifier that genuinely ends in K is left alone.
     for sample_id, key in keys.items():
-        if key.endswith("K") and key[:-1] in present:
+        if key[-1:] in ("K", "k") and key[:-1] in present:
             keys[sample_id] = key[:-1]
 
     groups = {}
@@ -64,7 +67,7 @@ def main():
     for key, members in groups.items():
         if len(members) < 2:
             continue
-        ranked = sorted(members, key=lambda m: (-unambiguous(m), len(m), m))
+        ranked = sorted(members, key=lambda m: (flag[m] != "PASS", -unambiguous(m), len(m), m))
         dropped.update(ranked[1:])
         for rank, member in enumerate(ranked):
             report.append((key, member, unambiguous(member), "kept" if rank == 0 else "dropped"))

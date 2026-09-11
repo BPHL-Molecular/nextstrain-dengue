@@ -5,10 +5,13 @@ Join the three BPHL exports into the metadata table the local workflow reads.
 The sequencing results and the epidemiology arrive as separate tab-delimited
 files sharing only a sample identifier:
 
-    sequences.txt   sampleID, serotype, nextclade_clade
+    sequenced.txt   sample_id, serotype, nextclade_clade, vadr_flag
     metadata.txt    sampleID, Imported Status, Origin, Date of Collection,
                     Collection County
     mosquito.txt    sampleID, Species, Origin, Date of Collection
+
+The sequencing file may be tab- or space-delimited. Rows are kept when their
+vadr_flag is one of --vadr-flags; a file without that column is kept whole.
 
 Output is defaults/metadata_template.tsv's schema, one row per sequenced sample
 that has a collection date. Use summary-report-to-metadata.py instead when
@@ -19,7 +22,7 @@ import argparse
 import csv
 import re
 import sys
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 
 COLUMNS = [
     "sample_id",
@@ -32,6 +35,7 @@ COLUMNS = [
     "host",
     "strain",
     "notes",
+    "vadr_flag",
 ]
 
 # Origin holds a country for imported cases and "FL - <county>" for locally
@@ -39,6 +43,7 @@ COLUMNS = [
 FLORIDA = re.compile(r"^FL\b[\s-]*", re.IGNORECASE)
 REGION_ONLY = {"South America", "Central America", "Africa", "Asia", "Caribbean"}
 UNKNOWN_ORIGIN = {"", "Unknown", "unknown"}
+RUN_SUFFIX = re.compile(r"(?:_(?:NC|RJ)_\d+|[-_](?:repeat\d*|NextSeq|test))$")
 
 
 def parse_args():
@@ -48,6 +53,7 @@ def parse_args():
     parser.add_argument("--mosquito", required=True)
     parser.add_argument("--synonyms", required=True)
     parser.add_argument("--countries", help="color_orderings.tsv, to check travel_country")
+    parser.add_argument("--vadr-flags", default="PASS", help="comma-separated flags to keep, e.g. PASS,REVIEW")
     parser.add_argument("--output", required=True)
     parser.add_argument("--report", required=True)
     return parser.parse_args()
@@ -62,6 +68,13 @@ def read_table(path):
             {key: (value or "").strip() for key, value in row.items() if key}
             for row in reader
         ]
+
+
+def read_sequencing(path):
+    with open(path, encoding="utf-8-sig") as handle:
+        lines = [line.split() for line in handle if line.strip()]
+    header = ["sampleID" if name == "sample_id" else name for name in lines[0]]
+    return [dict(zip(header, fields)) for fields in lines[1:]]
 
 
 def read_synonyms(path):
@@ -90,19 +103,20 @@ def join_keys(sample_id):
     Candidate epi identifiers for a sequencing identifier, least stripped first.
 
     Re-sequenced samples carry decorations the epi export does not: a t_ prefix,
-    a _NC_/_RJ_ run suffix, and a trailing K. Stripping is tried rather than
-    applied so that an identifier genuinely ending in K is not mangled.
+    a run suffix (_NC_<date>, _RJ_<date>, -repeat, _repeat, -repeat2, -NextSeq,
+    _test), and a trailing K or k. Stripping is tried rather than applied so that
+    an identifier genuinely ending in K is not mangled.
     """
     candidates = [sample_id]
     for candidate in list(candidates):
         if candidate.startswith("t_"):
             candidates.append(candidate[2:])
     for candidate in list(candidates):
-        stripped = re.sub(r"_(NC|RJ)_\d+$", "", candidate)
+        stripped = RUN_SUFFIX.sub("", candidate)
         if stripped != candidate:
             candidates.append(stripped)
     for candidate in list(candidates):
-        if candidate.endswith("K"):
+        if candidate[-1:] in ("K", "k"):
             candidates.append(candidate[:-1])
     return list(OrderedDict.fromkeys(candidates))
 
@@ -147,9 +161,15 @@ def main():
     undated = []
     unresolved = {}
     replicates = OrderedDict()
+    flags = {flag.strip().upper() for flag in args.vadr_flags.split(",")}
+    filtered = Counter()
 
-    for row in read_table(args.sequences):
+    for row in read_sequencing(args.sequences):
         sample_id = row["sampleID"]
+        vadr_flag = row.get("vadr_flag", "")
+        if vadr_flag and vadr_flag.upper() not in flags:
+            filtered[vadr_flag] += 1
+            continue
         epi = None
         source = None
         for key in join_keys(sample_id):
@@ -172,6 +192,7 @@ def main():
         record["serotype"] = row["serotype"]
         record["nextclade_clade"] = row["nextclade_clade"]
         record["collection_date"] = epi["Date of Collection"]
+        record["vadr_flag"] = vadr_flag
 
         if source == "mosquito":
             record["host"] = epi.get("Species", "")
@@ -214,6 +235,9 @@ def main():
             print(text, file=handle)
             print(text, file=sys.stderr)
 
+        if filtered:
+            emit(f"skipped {sum(filtered.values())} sequencing runs by VADR flag: "
+                 + ", ".join(f"{flag} {count}" for flag, count in sorted(filtered.items())))
         emit(f"wrote {len(records)} samples to {args.output}")
         emit(f"  travel-associated: {sum(1 for r in records if r['case_origin'] == 'travel-associated')}")
         emit(f"  local:             {sum(1 for r in records if r['case_origin'] == 'local')}")

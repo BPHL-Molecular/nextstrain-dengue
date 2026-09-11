@@ -67,7 +67,8 @@ rather than a single `Daytona_dengue` run, use the other converter:
 
 ```sh
 python3 local/scripts/bphl-export-to-metadata.py \
-    --sequences data/sequences.txt \
+    --sequences data/sequenced.txt \
+    --vadr-flags PASS,REVIEW \
     --metadata data/metadata.txt \
     --mosquito data/mosquito.txt \
     --synonyms local/defaults/country_synonyms.tsv \
@@ -76,7 +77,11 @@ python3 local/scripts/bphl-export-to-metadata.py \
     --report local/input/conversion_report.txt
 ```
 
-It expects `sampleID`, `serotype` and `nextclade_clade` in the sequencing file;
+It expects `sample_id` (or `sampleID`), `serotype`, `nextclade_clade` and
+`vadr_flag` in the sequencing file, tab- or space-delimited. Only runs whose
+`vadr_flag` is listed in `--vadr-flags` (default `PASS`) are kept, and the flag is
+carried into the metadata as the `vadr_flag` column. The FASTA has to hold every
+kept run, under the same identifier. The converter also expects
 `sampleID`, `Imported Status`, `Origin`, `Date of Collection` and
 `Collection County` in the case file; and `sampleID`, `Species`, `Origin` and
 `Date of Collection` in the mosquito file. Membership of the mosquito file is
@@ -92,11 +97,13 @@ string kept in `notes`. For a locally acquired case `Origin` is the county of
 exposure; it is recorded in `notes` when it differs from the collection county.
 
 Identifiers are written out exactly as the sequencing file has them, including
-the `t_` prefixes and `_NC_<date>` suffixes that re-sequenced samples carry,
-because they have to match the FASTA headers. Those decorations are stripped
-only to find the matching epidemiology row. When a specimen has several
-sequences, the workflow keeps the one with the most unambiguous bases and
-records the choice in `results/replicates.tsv`.
+the `t_` prefix, the run suffix (`_NC_<date>`, `_RJ_<date>`, `-repeat`,
+`_repeat`, `-repeat2`, `-NextSeq`, `_test`) and the trailing `K` or `k` that
+re-sequenced samples carry, because they have to match the FASTA headers. Those
+decorations are stripped only to find the matching epidemiology row. When a
+specimen has several sequences, the workflow keeps a VADR `PASS` run over any
+other, then the run with the most unambiguous bases, and records the choice in
+`results/replicates.tsv`.
 
 Read `conversion_report.txt`. It lists samples dropped for having no
 epidemiology row and therefore no collection date, samples sequenced more than
