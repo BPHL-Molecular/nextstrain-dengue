@@ -120,7 +120,7 @@ def resolve_origin(origin, synonyms, countries, unresolved):
 
     Ambiguous means the case cannot be placed: several origins listed, a region
     rather than a country, or nothing recorded. Those become case_origin
-    unknown rather than being resolved to whichever value happens to be first.
+    undetermined rather than being resolved to whichever value happens to be first.
     """
     if origin in UNKNOWN_ORIGIN or ";" in origin or origin in REGION_ONLY:
         return "", True
@@ -181,7 +181,7 @@ def main():
             record["location"] = epi.get("Collection County", "")
             status = epi.get("Imported Status", "")
             if status.startswith("Unknown"):
-                record["case_origin"] = "unknown"
+                record["case_origin"] = "undetermined"
             elif status == "Acquired in Florida":
                 record["case_origin"] = "local"
                 exposure = county_from_origin(origin)
@@ -192,7 +192,7 @@ def main():
                     origin, synonyms, countries, unresolved
                 )
                 if ambiguous:
-                    record["case_origin"] = "unknown"
+                    record["case_origin"] = "undetermined"
                     record["notes"] = f"origin recorded as {origin!r}"
                 else:
                     record["case_origin"] = "travel-associated"
@@ -217,7 +217,7 @@ def main():
         emit(f"wrote {len(records)} samples to {args.output}")
         emit(f"  travel-associated: {sum(1 for r in records if r['case_origin'] == 'travel-associated')}")
         emit(f"  local:             {sum(1 for r in records if r['case_origin'] == 'local')}")
-        emit(f"  unknown:           {sum(1 for r in records if r['case_origin'] == 'unknown')}")
+        emit(f"  undetermined:      {sum(1 for r in records if r['case_origin'] == 'undetermined')}")
 
         if undated:
             emit(f"\ndropped {len(undated)} sequenced samples with no epidemiology row.")
@@ -226,9 +226,8 @@ def main():
                 emit(f"  {sample_id}")
 
         if groups:
-            emit(f"\n{len(groups)} samples were sequenced more than once. All rows are kept.")
-            emit("Compare unambiguous base counts in results/validation_report.txt and")
-            emit("delete the weaker row from the metadata before building.")
+            emit(f"\n{len(groups)} samples were sequenced more than once. All rows are kept here;")
+            emit("the local workflow keeps the copy with the most unambiguous bases.")
             for base, ids in groups.items():
                 emit(f"  {base}: {', '.join(ids)}")
 

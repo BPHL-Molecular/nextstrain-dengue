@@ -5,8 +5,8 @@ workflow consumes as additional_inputs.
 
 REQUIRED INPUTS:
 
-    metadata  = data/metadata_validated.tsv
-    sequences = data/sequences_all.fasta
+    metadata  = data/metadata_validated.tsv, data/metadata_linked.tsv
+    sequences = data/sequences_linked.fasta
 
 OUTPUTS:
 
@@ -61,8 +61,8 @@ rule split_outputs_by_serotype:
     exist even when it is empty.
     """
     input:
-        metadata="data/metadata_lineages.tsv",
-        sequences="data/sequences_all.fasta",
+        metadata="data/metadata_linked.tsv",
+        sequences="data/sequences_linked.fasta",
     output:
         metadata=expand("results/metadata_{serotype}.tsv", serotype=SEROTYPES),
         sequences=expand("results/sequences_{serotype}.fasta", serotype=SEROTYPES),

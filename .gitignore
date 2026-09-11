@@ -12,6 +12,7 @@ environment*
 # local/data/ and local/results/ are already covered by the rules above.
 local/input/*
 !local/input/.gitkeep
+/analysis/
 
 # Snakemake state dir
 .snakemake/

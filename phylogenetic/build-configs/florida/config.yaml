@@ -67,4 +67,4 @@ export:
   title: "Dengue virus in Florida"
   maintainers:
     - name: "Florida Bureau of Public Health Laboratories"
-  build_url: "https://github.com/arodzh-sudo/dengue-fl"
+  build_url: "https://github.com/BPHL-Molecular/nextstrain-dengue"

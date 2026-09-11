@@ -56,9 +56,9 @@ your identifiers or species differ; the host value has to appear in
 genus and type fall back to the host name.
 
 The FASTA may contain more samples than the metadata. Anything present in the
-sequences but absent from the metadata is excluded with a warning, so
-concatenating all of `assemblies_qc_pass/` and then letting this script decide
-what enters the trees is the intended workflow.
+sequences but absent from the metadata is excluded and listed in the validation
+report, so concatenating all of `assemblies_qc_pass/` and then letting this
+script decide what enters the trees is the intended workflow.
 
 #### From a multi-year epidemiology export
 
@@ -87,14 +87,16 @@ rather than needing a recognizable prefix.
 after passing through `defaults/country_synonyms.tsv`, which reconciles the
 export's spellings with `phylogenetic/defaults/color_orderings.tsv`. An `Origin`
 that names several places, a region rather than a country, or nothing at all
-yields `case_origin: unknown` and a blank `travel_country`, with the original
+yields `case_origin: undetermined` and a blank `travel_country`, with the original
 string kept in `notes`. For a locally acquired case `Origin` is the county of
 exposure; it is recorded in `notes` when it differs from the collection county.
 
 Identifiers are written out exactly as the sequencing file has them, including
 the `t_` prefixes and `_NC_<date>` suffixes that re-sequenced samples carry,
 because they have to match the FASTA headers. Those decorations are stripped
-only to find the matching epidemiology row.
+only to find the matching epidemiology row. When a specimen has several
+sequences, the workflow keeps the one with the most unambiguous bases and
+records the choice in `results/replicates.tsv`.
 
 Read `conversion_report.txt`. It lists samples dropped for having no
 epidemiology row and therefore no collection date, samples sequenced more than
@@ -110,7 +112,7 @@ fill one row per sample.
 | `nextclade_clade` | yes | the v-gen-lab lineage from Daytona, e.g. `2II_F.1.1.2` |
 | `collection_date` | yes | `YYYY-MM-DD`, or `YYYY-MM-XX` / `YYYY-XX-XX` when partial |
 | `location` | no | county |
-| `case_origin` | no | `local`, `travel-associated`, or `unknown`; set automatically when `travel_country` is filled |
+| `case_origin` | no | `local`, `travel-associated`, or `undetermined`; set automatically when `travel_country` is filled |
 | `travel_country` | no | where infection likely occurred; drives country_exposure |
 | `host` | no | defaults to `Homo sapiens`; set to `Aedes aegypti` for vector pools |
 | `strain` | no | overrides the derived Auspice display name |
@@ -168,15 +170,35 @@ The Auspice display name is derived for you as
 use, so local and public tips read the same way in the tree. Supply a `strain`
 column to override it.
 
+## Samples already in GenBank
+
+A genome the lab also deposited in GenBank comes back through `ingest` under a
+GenBank accession, which the collision check above cannot see. The workflow finds
+these copies by sequence. Each local genome is aligned with the GenBank records
+from Florida of the same serotype. A pair counts as one genome when it agrees at
+every position where both have a called base, and those positions cover at least
+90% of the shorter sequence. When a genome matches more than one record, the one
+with the same collection date is taken.
+
+A linked sample takes the GenBank accession and drops its own sequence, so the
+phylogenetic workflow shows it once: GenBank sequence and accession, with the
+local date, case origin, travel country, county and `data_source`.
+`results/genbank_copies.tsv` lists every pair. A pair marked `ambiguous` could
+not be resolved and stays in the build twice, so decide those rows before
+building. `bphl_named_unmatched` rows are GenBank records with a BPHL name and no
+local genome, which is expected for samples absent from the local metadata.
+
 ## Running it
 
 ```sh
+nextstrain build ingest
 nextstrain build local
 ```
 
-Run it from the top level of the repository. Core count and Snakemake flags come
-from [`profiles/default/config.yaml`](profiles/default/config.yaml), so no
-`--cores` is needed.
+Run both from the top level of the repository. `local` reads `ingest`'s results
+to find GenBank copies, so `ingest` has to finish first. Core count and Snakemake
+flags come from [`profiles/default/config.yaml`](profiles/default/config.yaml),
+so no `--cores` is needed.
 
 Outputs land in `local/results/`:
 
@@ -184,6 +206,8 @@ Outputs land in `local/results/`:
 - `sequences_{all,denv1..denv4}.fasta`
 - `include_{all,denv1..denv4}.txt`
 - `validation_report.txt`
+- `replicates.tsv`
+- `genbank_copies.tsv`
 
 All five serotypes always get a file, even when a run has no samples for one of
 them, because the phylogenetic workflow expands its input paths over every

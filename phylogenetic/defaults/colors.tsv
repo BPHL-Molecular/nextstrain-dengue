@@ -273,45 +273,4 @@ data_source	GenBank	#bbbbbb
 data_source	Florida BPHL	#e4572e
 case_origin	local	#b22222
 case_origin	travel-associated	#2e86ab
-case_origin	unknown	#bbbbbb
-
-# Focal countries for a Florida build, chosen from the observed DENV2 tip counts.
-# rule colors mutes every other country to grey, so these are the only ones that
-# carry a strong colour. Each is pinned twice, once for where a sample was
-# collected and once for where infection was acquired, with the same hex so a
-# country reads identically under either coloring.
-country	USA	#e6194b
-country	Cuba	#f58231
-country	Nicaragua	#ffe119
-country	Colombia	#3cb44b
-country	Brazil	#008080
-country	Venezuela	#46f0f0
-country	Costa Rica	#4363d8
-country	Puerto Rico	#911eb4
-country	Peru	#f032e6
-country	Mexico	#9a6324
-country	Dominican Republic	#800000
-country	Bolivia	#808000
-country	Paraguay	#000075
-country_exposure	USA	#e6194b
-country_exposure	Cuba	#f58231
-country_exposure	Nicaragua	#ffe119
-country_exposure	Colombia	#3cb44b
-country_exposure	Brazil	#008080
-country_exposure	Venezuela	#46f0f0
-country_exposure	Costa Rica	#4363d8
-country_exposure	Puerto Rico	#911eb4
-country_exposure	Peru	#f032e6
-country_exposure	Mexico	#9a6324
-country_exposure	Dominican Republic	#800000
-country_exposure	Bolivia	#808000
-country_exposure	Paraguay	#000075
-
-# Florida counties, spelled as the local metadata carries them.
-location	Hillsborough	#e6194b
-location	Pinellas	#f58231
-location	Dade	#4363d8
-location	Broward	#3cb44b
-location	Palm Beach	#911eb4
-location	Orange	#ffe119
-location	Lee	#008080
+case_origin	undetermined	#bbbbbb

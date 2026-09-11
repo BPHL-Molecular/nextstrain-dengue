@@ -1,4 +1,4 @@
-# dengue-fl/phylogenetic
+# nextstrain-dengue/phylogenetic
 
 Builds the dengue phylogenies. Upstream this workflow feeds
 [nextstrain.org/dengue](https://nextstrain.org/dengue); here it produces Auspice

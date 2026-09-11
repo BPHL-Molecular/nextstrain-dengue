@@ -1,4 +1,4 @@
-# dengue-fl/ingest
+# nextstrain-dengue/ingest
 
 Fetches dengue sequences and metadata from NCBI GenBank, curates them, and
 assigns dengue lineages with the `community/v-gen-lab/dengue` Nextclade

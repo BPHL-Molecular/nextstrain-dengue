@@ -14,6 +14,9 @@ it. Colours then repeat between regions, which is the deliberate trade: region i
 a separate colouring, and telling Cuba from Colombia matters more here than
 telling Cuba from Cambodia.
 
+The grouped columns share one assignment built from the union of their values, so
+a country has the same colour under country and country_exposure.
+
 Columns with no grouping to exploit, such as location, get a single ramp with the
 same colour cycling assign-colors.py uses when values outnumber the palette.
 """
@@ -134,19 +137,23 @@ def main():
 
     out = sys.stdout if args.output == "-" else open(args.output, "w", encoding="utf-8")
     try:
+        groups = OrderedDict()
         for column in args.grouped_columns:
-            groups = OrderedDict()
             for value in observed_values(rows, column):
-                groups.setdefault(region_of.get(value, UNGROUPED), []).append(value)
+                groups.setdefault(region_of.get(value, UNGROUPED), OrderedDict())[value] = None
 
-            if not groups:
+        color_of = {}
+        for region, values in groups.items():
+            ordered = sorted(values, key=lambda v: (position.get(v, len(position)), v))
+            color_of.update(zip(ordered, palette(schemes, len(ordered))))
+            print(f"{len(ordered)} values in {region}", file=sys.stderr)
+
+        for column in args.grouped_columns:
+            values = observed_values(rows, column)
+            if not values:
                 print(f"{column}: no values found, skipping", file=sys.stderr)
-
-            for region, values in groups.items():
-                values.sort(key=lambda v: (position.get(v, len(position)), v))
-                for value, color in zip(values, palette(schemes, len(values))):
-                    out.write(f"{column}\t{value}\t{color}\n")
-                print(f"{column}: {len(values)} in {region}", file=sys.stderr)
+            for value in values:
+                out.write(f"{column}\t{value}\t{color_of[value]}\n")
 
         for column in args.flat_columns:
             values = sorted(observed_values(rows, column))

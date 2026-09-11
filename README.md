@@ -1,4 +1,4 @@
-# dengue-fl
+# nextstrain-dengue
 
 Dengue virus phylogenetics for the Florida Bureau of Public Health Laboratories,
 forked from [nextstrain/dengue](https://github.com/nextstrain/dengue).
@@ -82,7 +82,7 @@ srun --account=bphl-umbrella --qos=bphl-umbrella \
      --cpus-per-task=8 --mem=32gb --time=08:00:00 --pty bash -i
 
 conda activate nextstrain          # provides the `nextstrain` command
-cd /blue/bphl-florida/$USER/dengue-fl
+cd /blue/bphl-florida/$USER/nextstrain-dengue
 nextstrain build ingest
 ```
 

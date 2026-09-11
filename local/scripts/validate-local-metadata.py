@@ -16,7 +16,7 @@ from Bio import SeqIO
 
 UNAMBIGUOUS = set("ACGTU")
 VALID_NT = set("ACGTURYSWKMBDHVN-.")
-CASE_ORIGINS = {"local", "travel-associated", "unknown", ""}
+CASE_ORIGINS = {"local", "travel-associated", "undetermined", ""}
 
 
 def parse_args():
@@ -286,7 +286,7 @@ def main():
             # transmission that was never established is the worse error.
             warnings.append(
                 f"{sample_id}: case_origin is blank, so it will render as an empty "
-                "category in Auspice. Set it to 'local' or 'unknown'"
+                "category in Auspice. Set it to 'local' or 'undetermined'"
             )
 
         record["case_origin"] = case_origin

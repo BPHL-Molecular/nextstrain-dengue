@@ -61,6 +61,13 @@ validate:
   # true turns every warning into a hard error.
   strict: false
 
+# GenBank data searched for copies of local genomes, per serotype. Written by
+# ingest/, so run it before this workflow.
+genbank_copies:
+  metadata: "../ingest/results/metadata_{serotype}.tsv"
+  sequences: "../ingest/results/sequences_{serotype}.fasta"
+  reference: "../phylogenetic/defaults/{serotype}/reference.gb"
+
 # Output column order. Any column missing after the merge is created empty.
 # A superset of curate.metadata_columns in ingest/defaults/config.yaml.
 metadata_columns:
