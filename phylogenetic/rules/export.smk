@@ -78,13 +78,15 @@ rule prepare_auspice_config:
         replace_clade_key=lambda wildcard: r"clade_membership" if wildcard.gene in ['genome'] else r"major_lineage",
         replace_clade_title=lambda wildcard: r"Serotype" if wildcard.serotype in ['all'] else r"Genotype (Nextclade)",
         # Auspice draws transmission lines by comparing a node's geographic value
-        # with its parent's, so a geo resolution is only usable if augur traits
-        # reconstructed it onto internal nodes. These must stay in step with
-        # config.traits.traits_columns or the map silently draws nothing.
+        # with its parent's, so a geo resolution only draws lines if augur traits
+        # reconstructed it onto internal nodes, which config.traits.traits_columns
+        # controls. division and location are left unreconstructed on purpose:
+        # public rows rarely carry a county, so inferring one would put Florida
+        # counties on foreign ancestors. They place tips on the map without lines.
         geo_resolutions=lambda wildcard: (
-            ["region", "region_exposure"]
+            ["region", "region_exposure", "division", "location"]
             if wildcard.serotype == "all"
-            else ["country", "region", "country_exposure", "region_exposure"]
+            else ["country", "region", "country_exposure", "region_exposure", "division", "location"]
         ),
     run:
         export_config = config.get("export", {})
@@ -254,7 +256,9 @@ rule lat_longs:
     rows under the exposure names. Every original row is kept, so it works
     whether --lat-longs supplements the built-in table or replaces it.
 
-    defaults/lat_longs.tsv adds the countries augur's table does not carry.
+    defaults/lat_longs.tsv adds the countries augur's table does not carry and
+    the Florida county coordinates (Census 2025 county gazetteer internal points,
+    Miami-Dade spelled Dade to match the local metadata).
     """
     input:
         extra = "defaults/lat_longs.tsv",

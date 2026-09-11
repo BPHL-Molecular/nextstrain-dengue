@@ -48,8 +48,9 @@ filter:
 # The collection columns are reconstructed as well so the Auspice map can be
 # switched between the two. Transmission lines are drawn by comparing a node
 # against its parent, and internal nodes only carry what augur traits produces,
-# so anything offered as a geo_resolution in export.smk has to appear here or the
-# map silently draws no lines.
+# so a geo_resolution in export.smk draws lines only if it appears here. division
+# and location are offered without lines on purpose: most public rows carry no
+# county, so reconstructing it would put Florida counties on foreign ancestors.
 #
 # The all build stays on region alone, matching upstream, because country level
 # reconstruction across four serotypes is slow and not very meaningful.
