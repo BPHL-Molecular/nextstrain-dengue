@@ -51,14 +51,13 @@ Everything runs through the [Nextstrain CLI](https://docs.nextstrain.org/project
 which supplies the toolchain from its own managed runtime. Confirm you have one
 with `nextstrain check-setup`, then, from the repo root:
 
-```sh
-cat /path/to/daytona_output/assemblies_qc_pass/*.fasta > local/input/sequences.fasta
-python3 local/scripts/summary-report-to-metadata.py \
-    --summary-report /path/to/daytona_output/summary_report.txt \
-    --output local/input/metadata.tsv     # then add collection_date to each row
+Put the sample metadata at `local/input/metadata.txt` and list the
+`Daytona_dengue` output folders in `local/input/runs.yaml` (see
+[`local/README.md`](local/README.md)), then:
 
+```sh
 nextstrain build ingest
-nextstrain build local
+nextstrain build local --configfile input/runs.yaml
 nextstrain build phylogenetic --configfile build-configs/florida/config.yaml --cores 8
 ```
 
@@ -66,8 +65,8 @@ nextstrain build phylogenetic --configfile build-configs/florida/config.yaml --c
 their core count and flags on its own. `phylogenetic` has none, matching
 upstream, so give it `--cores` explicitly.
 
-`ingest` and `local` are independent and can run in either order. Both must
-finish before `phylogenetic`.
+Run them in this order: `local` reads `ingest`'s results to link samples already
+in GenBank, and `phylogenetic` needs both.
 
 ## Running on UF HiPerGator
 

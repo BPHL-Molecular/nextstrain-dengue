@@ -1,7 +1,7 @@
-# Spellings used in the BPHL epidemiology export, mapped to the spellings in
-# phylogenetic/defaults/color_orderings.tsv. Anything not listed here has to
-# match that file exactly or bphl-export-to-metadata.py reports it and leaves
-# travel_country blank.
+# travel_country spellings mapped to the spellings in
+# phylogenetic/defaults/color_orderings.tsv. prepare-daytona-inputs.py applies
+# it; anything not listed has to match that file exactly, or the validator warns
+# that region_exposure cannot be set.
 #
 # from	to
 Trinidad And Tobago	Trinidad and Tobago

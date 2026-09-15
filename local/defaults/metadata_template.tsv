@@ -1,4 +1,0 @@
-sample_id	serotype	nextclade_clade	collection_date	location	case_origin	travel_country	host	strain	notes
-# Delete these two comment lines and the example row below, then add one row per sample.
-# Required: sample_id, serotype, nextclade_clade, collection_date. Everything else is optional.
-# sample1	denv2	2II_F.1.1.2	2026-07-14	Dade	travel-associated	Cuba	Homo sapiens		Daytona run 260714_M1

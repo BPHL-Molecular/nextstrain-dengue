@@ -4,8 +4,8 @@ normalises the sequence headers.
 
 REQUIRED INPUTS:
 
-    metadata  = config.local_metadata
-    sequences = config.local_sequences
+    metadata  = data/input_metadata.tsv
+    sequences = data/input_sequences.fasta
 
 OUTPUTS:
 
@@ -23,8 +23,8 @@ rule validate_local_metadata:
     the columns ingest produces. Fails the run on any structural problem.
     """
     input:
-        metadata=config["local_metadata"],
-        sequences=config["local_sequences"],
+        metadata="data/input_metadata.tsv",
+        sequences="data/input_sequences.fasta",
     output:
         metadata="data/metadata_validated.tsv",
         report="results/validation_report.txt",
@@ -59,7 +59,7 @@ rule normalize_local_fasta:
     accession headers ingest writes.
     """
     input:
-        sequences=config["local_sequences"],
+        sequences="data/input_sequences.fasta",
         metadata="data/metadata_validated.tsv",
     output:
         sequences="data/sequences_all.fasta",

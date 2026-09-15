@@ -9,122 +9,79 @@ file, one sequence file, and one include list per serotype.
 
 ## What you provide
 
-Two files, both in `local/input/`, which is gitignored so consensus sequences
-cannot be committed by accident.
+Two things: the `Daytona_dengue` runs to take sequences from, and one metadata
+table. Keep both under `local/input/`, which is gitignored so nothing private can
+be committed by accident.
 
-### `local/input/sequences.fasta`
+### The Daytona_dengue runs
 
-Every consensus genome for this run, concatenated into one FASTA. From a
-`Daytona_dengue` run that is:
+List each run's output folder in a small YAML file, for example
+`local/input/runs.yaml`:
 
-```sh
-cat /path/to/daytona_output/assemblies_qc_pass/*.fasta > local/input/sequences.fasta
+```yaml
+daytona_runs:
+  - /blue/bphl-florida/share/daytona_output_2026
+  - /blue/bphl-florida/share/daytona_output_2026_repeats
+sample_metadata: input/metadata.txt
 ```
 
-Each record header must be the sample identifier, either alone or as the first
-whitespace-delimited token. The workflow rewrites headers to the bare
-identifier, matching the bare accessions `ingest` writes.
+Each folder has to hold `summary_report.txt` and `assemblies_qc_pass/pass/` and
+`assemblies_qc_pass/review/`, one consensus FASTA per sample. `Daytona_dengue`
+writes every `PASS` assembly to `pass/` but only the `REVIEW` assemblies covering
+at least 80% of the genome to `review/`, so the folders decide what is usable.
+The workflow takes `sample_id`, `serotype`, `nextclade_clade` and `vadr_flag`
+from the summary report and looks for a `PASS` sample only in `pass/` and a
+`REVIEW` sample only in `review/`, by file name or by the identifier in the FASTA
+header. A `REVIEW` sample absent from `review/` is left out as below the coverage
+cutoff. Set `vadr_flags` to leave out `REVIEW` altogether. Samples with no serotype digit (`unclassified`, `NA`) are left out,
+because there is no v-gen-lab dataset to place them against.
 
-### `local/input/metadata.tsv`
+When the same `sample_id` appears in more than one run, a `PASS` copy is used
+over a `REVIEW` one; between equal flags, the run listed last wins.
 
-Generate it from the `Daytona_dengue` run rather than typing it out:
+### `local/input/metadata.txt`
 
-```sh
-python3 local/scripts/summary-report-to-metadata.py \
-    --summary-report /path/to/daytona_output/summary_report.txt \
-    --output local/input/metadata.tsv
-```
+Tab-delimited, one row per sample, with these five columns:
 
-That fills in `sample_id`, `serotype`, and `nextclade_clade`, all of which the
-pipeline already determined, and leaves `collection_date` and the epidemiological
-columns for you. It keeps only samples whose `vadr_flag` is `PASS` and prints every sample it dropped, with
-the reason. To include the `REVIEW` tier as well:
+| Column | Notes |
+|---|---|
+| `sample_id` | the laboratory identifier, without run tags |
+| `collection_date` | `YYYY-MM-DD`, or `YYYY-MM-XX` / `YYYY-XX-XX` when partial |
+| `location` | county, spelled as in `phylogenetic/defaults/lat_longs.tsv` (e.g. `Dade`) |
+| `case_origin` | `local`, `travel-associated` or `undetermined` |
+| `travel_country` | where infection likely occurred, for imported cases; drives `country_exposure` |
 
-```sh
-    --vadr-flags PASS,REVIEW
-```
+The table may list samples that were never sequenced or did not pass VADR; they
+are ignored. A sequenced sample needs a row here, because the collection date
+comes from it.
 
-Samples whose serotype is `unclassified` are always dropped, because there is no
-v-gen-lab dataset to place them against.
+Run identifiers can carry tags the metadata does not: a `t_` prefix, a run suffix
+(`_NC_<date>`, `_RJ_<date>`, `-repeat`, `_repeat`, `-repeat2`, `-NextSeq`,
+`_test`) or a trailing `K` or `k`. They are stripped only to find the metadata
+row; the tip keeps the full run identifier. When a specimen has several runs, the
+workflow keeps a `PASS` run over any other, then the run with the most
+unambiguous bases, and records the choice in `results/replicates.tsv`.
 
-Mosquito pools are detected from the sample identifier and get `host` set to
-`Aedes aegypti` instead of the human default, which the workflow then resolves to
-`Aedes` and `Mosquito` through ingest's own host map. The converter names every
-sample it treated this way. Adjust with `--vector-pattern` and `--vector-host` if
-your identifiers or species differ; the host value has to appear in
-`ingest/defaults/host_hostgenus_hosttype_map.tsv` or you get a warning and the
-genus and type fall back to the host name.
+`travel_country` passes through `defaults/country_synonyms.tsv` to match the
+spellings in `phylogenetic/defaults/color_orderings.tsv`. Mosquito pools are
+recognized from `sample_id` (`vector_pattern`, default any identifier containing
+"mosquito") and get `host` `Aedes aegypti` (`vector_host`), which the workflow
+resolves to `Aedes` and `Mosquito` through ingest's host map.
 
-The FASTA may contain more samples than the metadata. Anything present in the
-sequences but absent from the metadata is excluded and listed in the validation
-report, so concatenating all of `assemblies_qc_pass/` and then letting this
-script decide what enters the trees is the intended workflow.
+### `results/input_report.txt`
 
-#### From a multi-year epidemiology export
+Read it after every run. It lists how many samples each flag had, how many were
+written, and every sample left out with the reason: no metadata row, a `PASS`
+sample with no FASTA in `pass/`, a `REVIEW` sample below the coverage cutoff,
+more than one matching FASTA, no serotype, sequenced in several runs, and
+metadata rows that were not used.
 
-When the sequencing results and the epidemiology come from separate exports
-rather than a single `Daytona_dengue` run, use the other converter:
-
-```sh
-python3 local/scripts/bphl-export-to-metadata.py \
-    --sequences data/sequenced.txt \
-    --vadr-flags PASS,REVIEW \
-    --metadata data/metadata.txt \
-    --mosquito data/mosquito.txt \
-    --synonyms local/defaults/country_synonyms.tsv \
-    --countries phylogenetic/defaults/color_orderings.tsv \
-    --output local/input/metadata.tsv \
-    --report local/input/conversion_report.txt
-```
-
-It expects `sample_id` (or `sampleID`), `serotype`, `nextclade_clade` and
-`vadr_flag` in the sequencing file, tab- or space-delimited. Only runs whose
-`vadr_flag` is listed in `--vadr-flags` (default `PASS`) are kept, and the flag is
-carried into the metadata as the `vadr_flag` column. The FASTA has to hold every
-kept run, under the same identifier. The converter also expects
-`sampleID`, `Imported Status`, `Origin`, `Date of Collection` and
-`Collection County` in the case file; and `sampleID`, `Species`, `Origin` and
-`Date of Collection` in the mosquito file. Membership of the mosquito file is
-what sets `host`, so a vector sample keeps its normal laboratory identifier
-rather than needing a recognizable prefix.
-
-`Imported Status` becomes `case_origin`, and `Origin` becomes `travel_country`
-after passing through `defaults/country_synonyms.tsv`, which reconciles the
-export's spellings with `phylogenetic/defaults/color_orderings.tsv`. An `Origin`
-that names several places, a region rather than a country, or nothing at all
-yields `case_origin: undetermined` and a blank `travel_country`, with the original
-string kept in `notes`. For a locally acquired case `Origin` is the county of
-exposure; it is recorded in `notes` when it differs from the collection county.
-
-Identifiers are written out exactly as the sequencing file has them, including
-the `t_` prefix, the run suffix (`_NC_<date>`, `_RJ_<date>`, `-repeat`,
-`_repeat`, `-repeat2`, `-NextSeq`, `_test`) and the trailing `K` or `k` that
-re-sequenced samples carry, because they have to match the FASTA headers. Those
-decorations are stripped only to find the matching epidemiology row. When a
-specimen has several sequences, the workflow keeps a VADR `PASS` run over any
-other, then the run with the most unambiguous bases, and records the choice in
-`results/replicates.tsv`.
-
-Read `conversion_report.txt`. It lists samples dropped for having no
-epidemiology row and therefore no collection date, samples sequenced more than
-once, and travel countries missing from the colour ordering file.
-
-To write the table by hand instead, copy `defaults/metadata_template.tsv` and
-fill one row per sample.
-
-| Column | Required | Notes |
-|---|---|---|
-| `sample_id` | yes | must match a FASTA header, and must be unique |
-| `serotype` | yes | `denv1` through `denv4`; `DENV1` and `1` are accepted and normalized |
-| `nextclade_clade` | yes | the v-gen-lab lineage from Daytona, e.g. `2II_F.1.1.2` |
-| `collection_date` | yes | `YYYY-MM-DD`, or `YYYY-MM-XX` / `YYYY-XX-XX` when partial |
-| `location` | no | county |
-| `case_origin` | no | `local`, `travel-associated`, or `undetermined`; set automatically when `travel_country` is filled |
-| `travel_country` | no | where infection likely occurred; drives country_exposure |
-| `host` | no | defaults to `Homo sapiens`; set to `Aedes aegypti` for vector pools |
-| `strain` | no | overrides the derived Auspice display name |
-| `country`, `region`, `division` | no | default to `USA`, `North America`, `Florida` |
-| `authors`, `institution`, `notes` | no | default to the values in `defaults/config.yaml` |
+The rest of each record is filled in automatically. `serotype_genbank`,
+`is_lab_host`, `host_genus`, `host_type`, `length`, `data_source`, the three
+lineage levels, and the two exposure columns are all derived, using the same
+values and spellings as the public metadata so that colorings do not split into
+duplicate categories. `country`, `region` and `division` default to `USA`,
+`North America` and `Florida`.
 
 Everything else is filled in automatically. `serotype_genbank`, `is_lab_host`,
 `host_genus`, `host_type`, `length`, `data_source`, the three lineage levels, and
@@ -199,7 +156,7 @@ local genome, which is expected for samples absent from the local metadata.
 
 ```sh
 nextstrain build ingest
-nextstrain build local
+nextstrain build local --configfile input/runs.yaml
 ```
 
 Run both from the top level of the repository. `local` reads `ingest`'s results
@@ -209,6 +166,7 @@ so no `--cores` is needed.
 
 Outputs land in `local/results/`:
 
+- `input_report.txt`
 - `metadata_{all,denv1..denv4}.tsv`
 - `sequences_{all,denv1..denv4}.fasta`
 - `include_{all,denv1..denv4}.txt`

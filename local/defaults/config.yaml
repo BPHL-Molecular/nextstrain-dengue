@@ -1,13 +1,20 @@
 # Configuration for the local (private) sequence preparation workflow.
 #
-# This workflow turns consensus genomes from the Daytona_dengue pipeline plus a
-# hand-filled metadata TSV into per-serotype files that the phylogenetic
-# workflow merges with the public GenBank data produced by ingest/.
+# This workflow turns Daytona_dengue runs plus a sample metadata table into
+# per-serotype files that the phylogenetic workflow merges with the public
+# GenBank data produced by ingest/.
 
-# Raw inputs. Override on the command line with, for example:
-#   nextstrain build local --config local_sequences=/path/to/consensus.fasta
-local_sequences: "input/sequences.fasta"
-local_metadata: "input/metadata.tsv"
+# Daytona_dengue output folders, each holding summary_report.txt and
+# assemblies_qc_pass/{pass,review}/. List them in your own YAML and pass it with
+# --configfile. When a sample is in several runs, a PASS copy wins, then the run
+# listed last.
+daytona_runs: []
+# Tab-delimited: sample_id, collection_date, location, case_origin, travel_country.
+sample_metadata: "input/metadata.txt"
+vadr_flags: ["PASS", "REVIEW"]
+# Samples whose sample_id matches this are mosquito pools and get vector_host.
+vector_pattern: "(?i)mosquito"
+vector_host: "Aedes aegypti"
 
 # Values stamped onto every local record. These strings must match the values
 # ingest produces, or colorings and traits will fragment into duplicate

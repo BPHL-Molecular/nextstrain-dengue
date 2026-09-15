@@ -31,7 +31,7 @@ def parse_args():
 
 
 def undecorated(sample_id):
-    # Keep in step with join_keys in bphl-export-to-metadata.py.
+    # Keep in step with join_keys in prepare-daytona-inputs.py.
     stripped = sample_id[2:] if sample_id.startswith("t_") else sample_id
     return RUN_SUFFIX.sub("", stripped)
 

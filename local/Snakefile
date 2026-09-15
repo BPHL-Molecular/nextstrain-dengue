@@ -15,11 +15,13 @@ rule all:
         expand("results/metadata_{serotype}.tsv", serotype=SEROTYPES),
         expand("results/sequences_{serotype}.fasta", serotype=SEROTYPES),
         expand("results/include_{serotype}.txt", serotype=SEROTYPES),
+        "results/input_report.txt",
         "results/validation_report.txt",
         "results/replicates.tsv",
         "results/genbank_copies.tsv",
 
 
+include: "rules/prepare.smk"
 include: "rules/validate.smk"
 include: "rules/deduplicate.smk"
 include: "rules/finalize.smk"
